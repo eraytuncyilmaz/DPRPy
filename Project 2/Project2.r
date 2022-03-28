@@ -1,3 +1,4 @@
+#Required Libraries
 library(xml2)
 library(future)
 library(rmarkdown)
@@ -15,6 +16,7 @@ library(lubridate)
 #Detailed description can be found on “https://meta.stackexchange.com/questions/2677”. 
 #The forum that is chosen to analyse is https://academia.stackexchange.com/"
 
+#Functions to Create Data Frame From XML File
 #Badges
 Badges <- function(path){
   #Path to XML file
@@ -218,6 +220,7 @@ Votes <- function(path){
   
   return(Votes_df)}
 
+#Visualizing Functions
 #Data Viewer
 #For a quick look at the data frame. Top 10 rows are shown.
 Data_View <- function(df, cptn, algnmnt)
@@ -225,6 +228,7 @@ Data_View <- function(df, cptn, algnmnt)
   kable_styling(bootstrap_options = c('striped', 'hover', 'responsive', 'condensed')) %>%  
   scroll_box(width = "100%", height = "200px")
 
+#Auxiliary Functions
 #No NAs in a Column
 #Returns a data frame without the rows of which has the value NA of selected column.
 No_NAs <- function(df, col)

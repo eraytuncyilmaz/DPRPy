@@ -60,3 +60,30 @@ and https://meta.stackexchange.com/questions/2677
 The Project 3, is a data science challenge. We are going to create questions and generate answers to them.  
 We are interested in issues related to specific websites, but also comparisons between sites.  
 The state of “today” and trends over time. Popular stuff and rarities. Differences and similarities.  
+<br/>
+
+# Project 4
+## Data Description
+
+We are working on a simplified dump of anonymised data from the website https://travel.stackexchange.com/  
+(full data set is available at https://archive.org/details/stackexchange), which consists of the following data frames:  
+
+• Badges.csv.gz  
+• Comments.csv.gz  
+• PostLinks.csv.gz  
+• Posts.csv.gz  
+• Tags.csv.gz  
+• Users.csv.gz  
+• Votes.csv.gz  
+  
+To familiarize yourself with the said service and data sets structure,  
+see http://www.gagolewski.com/resources/data/travel_stackexchange_com/readme.txt.  
+<br/>
+
+## Task Description
+
+3 SQL queries have two implementations using Python:  
+
+• pandas.read_sql_query("""question SQL""") - reference solution  
+• calling methods and functions from pandas package
+<br/>
