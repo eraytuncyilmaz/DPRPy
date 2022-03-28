@@ -1,0 +1,584 @@
+---
+title: "DPRPy 2020/2021 Homework Assignment no. 3"
+author: "Eray Tunç Yılmaz 295565 & Aytaç Gedik 301929"
+output:
+  html_document: 
+    df_print: kable
+    css: style.css
+    code_folding: hide
+    fig_width: 12
+    fig_height: 6
+---
+
+## **Required Libraries** 
+```{r class.source = 'fold-show', message = FALSE, warning = FALSE}
+library(xml2)
+library(future)
+library(rmarkdown)
+library(knitr)
+library(kableExtra)
+library(sqldf)
+library(wordcloud)
+library(RColorBrewer)
+library(TSstudio)
+library(plotly)
+library(lubridate)
+```
+
+## **Functions to Create Data Frame From XML File**
+### Badges
+```{r Badges XML to Data Frame Function, class.source = "chunk-color"}
+Badges <- function(path){
+  #Path to XML file
+  Badges_xml <- path
+  
+  #Read XML file
+  Badges_doc <- read_xml(Badges_xml, useInternalNode = TRUE)
+  
+  #Get rows
+  Badges_rows <- xml_children(Badges_doc)
+  
+  #Create data frame
+  Badges_df <- data.frame(
+    Id = as.integer(xml_attr(Badges_rows, "Id")),
+    UserId = as.integer(xml_attr(Badges_rows, "UserId")),
+    Name = as.character(xml_attr(Badges_rows, "Name")),
+    Date = as.Date(xml_attr(Badges_rows, "Date")), 
+    Class = as.integer(xml_attr(Badges_rows, "Class")),
+    TagBased = as.logical(xml_attr(Badges_rows, "TagBased")))
+  
+  return(Badges_df)}
+```
+### Comments
+```{r Comments XML to Data Frame Function, class.source = "chunk-color"}
+Comments <- function(path){
+  #Path to XML file
+  Comments_xml <- path
+  
+  #Read XML file
+  Comments_doc <- read_xml(Comments_xml, useInternalNode = TRUE)
+  
+  #Get rows
+  Comments_rows <- xml_children(Comments_doc)
+  
+  #Create data frame
+  Comments_df <- data.frame(
+    Id = as.integer(xml_attr(Comments_rows, "Id")),
+    PostId = as.integer(xml_attr(Comments_rows, "PostId")),
+    Score = as.integer(xml_attr(Comments_rows, "Score")),
+    Text = as.character(xml_attr(Comments_rows, "Text")),
+    CreationDate = as.Date(xml_attr(Comments_rows, "CreationDate")),
+    UserDisplayName = as.character(xml_attr(Comments_rows, "UserDisplayName")),
+    UserId = as.integer(xml_attr(Comments_rows, "UserId")),
+    ContentLicense = as.character(xml_attr(Comments_rows, "ContentLicense")))
+  
+  return(Comments_df)}
+```
+### PostHistory
+```{r PostHistory XML to Data Frame Function, class.source = "chunk-color"}
+PostHistory <- function(path){
+  #Path to XML file
+  PostHistory_xml <- path
+  
+  #Read XML file
+  PostHistory_doc <- read_xml(PostHistory_xml, useInternalNode = TRUE)
+  
+  #Get rows
+  PostHistory_rows <- xml_children(PostHistory_doc)
+  
+  #Create data frame
+  PostHistory_df <- data.frame(
+    Id = as.integer(xml_attr(PostHistory_rows, "Id")),
+    PostHistoryTypeId = as.integer(xml_attr(PostHistory_rows, "PostHistoryTypeId")),
+    PostId = as.integer(xml_attr(PostHistory_rows, "PostId")),
+    RevisionGUID = as.character(xml_attr(PostHistory_rows, "RevisionGUID")),
+    CreationDate = as.Date(xml_attr(PostHistory_rows, "CreationDate")),
+    UserId = as.integer(xml_attr(PostHistory_rows, "UserId")),
+    UserDisplayName = as.character(xml_attr(PostHistory_rows, "UserDisplayName")),
+    Comment = as.character(xml_attr(PostHistory_rows, "Comment")),
+    Text = as.character(xml_attr(PostHistory_rows, "Text")),
+    ContentLicense = as.character(xml_attr(PostHistory_rows, "ContentLicense")))
+  
+  return(PostHistory_df)}
+```
+### PostLinks
+```{r PostLinks XML to Data Frame Function, class.source = "chunk-color"}
+PostLinks <- function(path){
+  #Path to XML file
+  PostLinks_xml <- path
+  
+  #Read XML file
+  PostLinks_doc <- read_xml(PostLinks_xml, useInternalNode = TRUE)
+  
+  #Get rows
+  PostLinks_rows <- xml_children(PostLinks_doc)
+  
+  #Create data frame
+  PostLinks_df <- data.frame(
+    Id = as.integer(xml_attr(PostLinks_rows, "Id")),
+    CreationDate = as.Date(xml_attr(PostLinks_rows, "CreationDate")),
+    PostId = as.integer(xml_attr(PostLinks_rows, "PostId")),
+    RelatedPostId = as.integer(xml_attr(PostLinks_rows, "RelatedPostId")),
+    LinkTypeId = as.integer(xml_attr(PostLinks_rows, "LinkTypeId")))
+  
+  return(PostLinks_df)}
+```
+### Posts
+```{r Posts XML to Data Frame Function, class.source = "chunk-color"}
+Posts <- function(path){
+  #Path to XML file
+  Posts_xml <- path
+  
+  #Read XML file
+  Posts_doc <- read_xml(Posts_xml, useInternalNode = TRUE)
+  
+  #Get rows
+  Posts_rows <- xml_children(Posts_doc)
+  
+  #Create data frame
+  Posts_df <- data.frame(
+    Id = as.integer(xml_attr(Posts_rows, "Id")),
+    PostTypeId = as.integer(xml_attr(Posts_rows, "PostTypeId")),
+    AcceptedAnswerId = as.integer(xml_attr(Posts_rows, "AcceptedAnswerId")),
+    ParentId = as.integer(xml_attr(Posts_rows, "ParentId")),
+    CreationDate = as.Date(xml_attr(Posts_rows, "CreationDate")),
+    Score = as.integer(xml_attr(Posts_rows, "Score")),
+    ViewCount = as.integer(xml_attr(Posts_rows, "ViewCount")),
+    Body = as.character(xml_attr(Posts_rows, "Body")),
+    OwnerUserId = as.integer(xml_attr(Posts_rows, "OwnerUserId")),
+    OwnerDisplayName = as.character(xml_attr(Posts_rows, "OwnerDisplayName")),
+    LastEditorUserId = as.integer(xml_attr(Posts_rows, "LastEditorUserId")),
+    LastEditorDisplayName = as.character(xml_attr(Posts_rows, "LastEditorDisplayName")),
+    LastEditDate = as.Date(xml_attr(Posts_rows, "LastEditDate")),
+    LastActivityDate = as.Date(xml_attr(Posts_rows, "LastActivityDate")),
+    Title = as.character(xml_attr(Posts_rows, "Title")),
+    Tags = as.character(xml_attr(Posts_rows, "Tags")),
+    AnswerCount = as.integer(xml_attr(Posts_rows, "AnswerCount")),
+    CommentCount = as.integer(xml_attr(Posts_rows, "CommentCount")),
+    FavoriteCount = as.integer(xml_attr(Posts_rows, "FavoriteCount")),
+    ClosedDate = as.Date(xml_attr(Posts_rows, "ClosedDate")),
+    CommunityOwnedDate = as.Date(xml_attr(Posts_rows, "CommunityOwnedDate")),
+    ContentLicense = as.character(xml_attr(Posts_rows, "ContentLicense")))
+
+  return(Posts_df)}
+```
+### Tags
+```{r Tags XML to Data Frame Function, class.source = "chunk-color"}
+Tags <- function(path){
+  #Path to XML file
+  Tags_xml <- path
+  
+  #Read XML files
+  Tags_doc <- read_xml(Tags_xml, useInternalNode = TRUE)
+  
+  #Get rows
+  Tags_rows <- xml_children(Tags_doc)
+  
+  #Create data frame
+  Tags_df <- data.frame(
+    Id = as.integer(xml_attr(Tags_rows, "Id")),
+    TagName = as.character(xml_attr(Tags_rows, "TagName")),
+    Count = as.integer(xml_attr(Tags_rows, "Count")),
+    ExcerptPostId = as.integer(xml_attr(Tags_rows, "ExcerptPostId")),
+    WikiPostId = as.integer(xml_attr(Tags_rows, "WikiPostId")))
+  
+  return(Tags_df)}
+```
+### Users
+```{r Users XML to Data Frame Function, class.source = "chunk-color"}
+Users <- function(path){
+  #Path to XML file
+  Users_xml <- path
+  
+  #Read XML files
+  Users_doc <- read_xml(Users_xml, useInternalNode = TRUE)
+  
+  #Get rows
+  Users_rows <- xml_children(Users_doc)
+  
+  #Create data frame
+  Users_df <- data.frame(
+    Id = as.integer(xml_attr(Users_rows, "Id")),
+    Reputation = as.integer(xml_attr(Users_rows, "Reputation")),
+    CreationDate = as.Date(xml_attr(Users_rows, "CreationDate")),
+    DisplayName = as.character(xml_attr(Users_rows, "DisplayName")),
+    LastAccessDate = as.Date(xml_attr(Users_rows, "LastAccessDate")),
+    WebsiteUrl = as.character(xml_attr(Users_rows, "WebsiteUrl")),
+    Location = as.character(xml_attr(Users_rows, "Location")),
+    AboutMe = as.character(xml_attr(Users_rows, "AboutMe")),
+    Views = as.integer(xml_attr(Users_rows, "Views")),
+    UpVotes = as.integer(xml_attr(Users_rows, "UpVotes")),
+    DownVotes = as.integer(xml_attr(Users_rows, "DownVotes")),
+    ProfileImageUrl = as.character(xml_attr(Users_rows, "ProfileImageUrl")),
+    AccountId = as.integer(xml_attr(Users_rows, "AccountId")))
+  
+  return(Users_df)}
+```
+### Votes
+```{r Votes XML to Data Frame Function, class.source = "chunk-color"}
+Votes <- function(path){
+  #Path to XML file
+  Votes_xml <- path
+  
+  #Read XML files
+  Votes_doc <- read_xml(Votes_xml, useInternalNode = TRUE)
+  
+  #Get rows
+  Votes_rows <- xml_children(Votes_doc)
+  
+  #Create data frame
+  Votes_df <- data.frame(
+    Id = as.integer(xml_attr(Votes_rows, "Id")),
+    PostId = as.integer(xml_attr(Votes_rows, "PostId")),
+    VoteTypeId = as.integer(xml_attr(Votes_rows, "VoteTypeId")),
+    UserId = as.integer(xml_attr(Votes_rows, "UserId")),
+    CreationDate = as.Date(xml_attr(Votes_rows, "CreationDate")),
+    BountyAmount = as.integer(xml_attr(Votes_rows, "BountyAmount")))
+  
+  return(Votes_df)}
+```
+
+## **Visualizing Functions**
+### Data Viewer
+```{r Data Viewer, class.source = "chunk-color"}
+#For a quick look at the data frame. Top 10 rows are shown.
+Data_View <- function(df, cptn, algnmnt)
+  kable(head(df, n = 10), caption = cptn, align = algnmnt) %>% 
+  kable_styling(bootstrap_options = c('striped', 'hover', 'responsive', 'condensed')) %>%  
+  scroll_box(width = "100%", height = "200px")
+```
+
+## **Auxiliary Functions**
+### Order by
+```{r Order by, class.source = "chunk-color"}
+#Returns a data frame where it is ordered according to given column
+Order_By <- function(df, col)
+  sqldf::sqldf(sprintf("
+  SELECT
+      *
+  FROM
+      %s
+  ORDER BY 
+      %s DESC
+  ", df, col))
+```
+### Top Answerers
+```{r Top Answerers, class.source = "chunk-color"}
+#Returns a data frame of users ordered according to their scores.
+Top_Answerers <- function(Users_df, Posts_df)
+  sqldf::sqldf("
+  SELECT 
+      Users_df.Id,
+      DisplayName,
+      Count(Posts_df.Id) AS Answers,
+      CAST(AVG(CAST(Score AS float)) as numeric(6,2)) AS [Average Answer Score]
+  FROM
+      Posts_df
+  INNER JOIN
+      Users_df ON Users_df.Id = OwnerUserId
+  WHERE 
+      PostTypeId = 2 and CommunityOwnedDate IS NULL and ClosedDate IS NULL
+  GROUP BY
+      Users_df.Id, DisplayName
+  HAVING
+      Count(Posts_df.Id) > 10
+  ORDER BY
+      [Average Answer Score] DESC
+  ")
+```
+### Most Used Tags
+```{r Most Used Tags, class.source = "chunk-color"}
+#Returns a data frame where tags are ordered according to their usage counts.
+Words <- function(Tags_df)
+  sqldf::sqldf("
+  SELECT 
+      TagName,
+      Count
+  FROM
+      Tags_df
+  ORDER BY
+      Count DESC
+  ")
+```
+### Top Users by Country
+```{r Top Poland Users, class.source = "chunk-color"}
+#Returns a data frame of users ordered by their reputation of given country.
+Top_Users <- function(Users_df, Country)
+  sqldf::sqldf(sprintf("
+  SELECT
+      ROW_NUMBER() OVER(ORDER BY Reputation DESC) AS [#], 
+      Id,
+      DisplayName,
+      Reputation
+  FROM
+      %s
+  WHERE
+      LOWER(Location) LIKE LOWER('%s')
+  ORDER BY
+      Reputation DESC
+  ", Users_df, Country))
+```
+
+## **android.stackexchange.com**
+### Path to android XML files
+```{r android XML File Paths, class.source = 'fold-show'}
+android_Badges_xml <- "android.stackexchange.com\\Badges.xml"
+android_Comments_xml <- "android.stackexchange.com\\Comments.xml"
+android_PostHistory_xml <- "android.stackexchange.com\\PostHistory.xml"
+android_PostLinks_xml <- "android.stackexchange.com\\PostLinks.xml"
+android_Posts_xml <- "android.stackexchange.com\\Posts.xml"
+android_Tags_xml <- "android.stackexchange.com\\Tags.xml"
+android_Users_xml <- "android.stackexchange.com\\Users.xml"
+android_Votes_xml <- "android.stackexchange.com\\Votes.xml"
+```
+
+### Data Frames
+```{r android Data Frames, class.source = 'fold-show', cache = TRUE}
+#Data frames will be created in parallel. Hence, creating multisession
+plan(multisession, gc = TRUE)
+
+#Promises
+android_Badges_df %<-% Badges(android_Badges_xml)
+android_Comments_df %<-% Comments(android_Comments_xml)
+android_PostHistory_df %<-% PostHistory(android_PostHistory_xml)
+android_PostLinks_df %<-% PostLinks(android_PostLinks_xml)
+android_Posts_df %<-% Posts(android_Posts_xml)
+android_Tags_df %<-% Tags(android_Tags_xml)
+android_Users_df %<-% Users(android_Users_xml)
+android_Votes_df %<-% Votes(android_Votes_xml)
+
+#Creating data frames
+android_dfs <- lapply(ls(pattern = "android"), get)
+
+#Continue rest in sequential
+plan(sequential)
+```
+
+```{r android 1, echo = FALSE}
+and_df1 <- Order_By("android_Posts_df", "ViewCount")[, c("ParentId", "Title", "CreationDate", "ViewCount")]
+and_mostViewed <- and_df1[1:3 & is.na(and_df1$ParentId),]
+and_df2 <- Order_By("android_Posts_df", "Score")[, c("ParentId", "Title", "CreationDate", "Score")]
+and_mostScored <- and_df2[1:3 & is.na(and_df2$ParentId),]
+```
+#####  The most viewed question being `r text_spec(and_mostViewed[1, "Title"], color = "red")` is created on `r text_spec(and_mostViewed[1, "CreationDate"], color = "red")` has `r text_spec(and_mostViewed[1, "ViewCount"], color = "red")` views.
+##### Following the first question, most viewed second and third questions are `r text_spec(and_mostViewed[2, "Title"], color = "red")` is created on `r text_spec(and_mostViewed[2, "CreationDate"], color = "red")` has `r text_spec(and_mostViewed[2, "ViewCount"], color = "red")` views and `r text_spec(and_mostViewed[3, "Title"], color = "red")` is created on `r text_spec(and_mostViewed[3, "CreationDate"], color = "red")` has `r text_spec(and_mostViewed[3, "ViewCount"], color = "red")` views.
+
+##### Also, the highest scored question `r text_spec(and_mostScored[1, "Title"], color = "red")` with `r text_spec(and_mostScored[1, "Score"], color = "red")` points is created on `r text_spec(and_mostScored[1, "CreationDate"], color = "red")`.
+##### After the first question, second and third one are `r text_spec(and_mostScored[2, "Title"], color = "red")` with `r text_spec(and_mostScored[2, "Score"], color = "red")` points is created on `r text_spec(and_mostScored[2, "CreationDate"], color = "red")` and `r text_spec(and_mostScored[3, "Title"], color = "red")` with `r text_spec(and_mostScored[3, "Score"], color = "red")` points is created on `r text_spec(and_mostScored[3, "CreationDate"], color = "red")`.
+
+##### Next, the `r text_spec("Top 10 Users", color = "red")` on android.stackexchange.com based on their reputations is shown on the below.
+```{r android 2}
+Data_View(Order_By("android_Users_df", "Reputation")[1:10, c("Id", "DisplayName", "Reputation")], 'Top 10 Users', "clc")
+```
+##### Also, on the figure below the `r text_spec("Top 10 Poland Users", color = "red")` is shown.
+```{r android 3}
+Data_View(Top_Users("android_Users_df", "Poland"), 'Top 10 Poland Users', "cclc")
+```
+##### Exploring more, the `r text_spec("Top 10 Answerers", color = "red")` on android.stackexchange.com is shown on the below figure.
+```{r android 4}
+Data_View(Top_Answerers(android_Users_df, android_Posts_df), 'Top Answerers', "llcc")
+```
+
+##### There are total of `r text_spec(nrow(android_Tags_df), color = "red")` different Tags on android.stackexchange.com and the most used tags on android.stackexchange.com are shown as word cloud below. 
+```{r android 5, message = FALSE, warning = FALSE}
+#Word Cloud
+wordcloud(words = Words(android_Tags_df)$TagName, freq = Words(android_Tags_df)$Count, min.freq = 1, max.words = 200, random.order = FALSE, rot.per = 0.35, colors = brewer.pal(8, "Dark2"))
+```
+
+## **apple.stackexchange.com**
+### Path to apple XML files
+```{r apple XML File Paths, class.source = 'fold-show'}
+apple_Badges_xml <- "apple.stackexchange.com\\Badges.xml"
+apple_Comments_xml <- "apple.stackexchange.com\\Comments.xml"
+apple_PostHistory_xml <- "apple.stackexchange.com\\PostHistory.xml"
+apple_PostLinks_xml <- "apple.stackexchange.com\\PostLinks.xml"
+apple_Posts_xml <- "apple.stackexchange.com\\Posts.xml"
+apple_Tags_xml <- "apple.stackexchange.com\\Tags.xml"
+apple_Users_xml <- "apple.stackexchange.com\\Users.xml"
+apple_Votes_xml <- "apple.stackexchange.com\\Votes.xml"
+```
+
+### Data Frames
+```{r apple Data Frames, class.source = 'fold-show', cache = TRUE}
+#Data frames will be created in parallel. Hence, creating multisession
+plan(multisession, gc = TRUE)
+
+#Promises
+apple_Badges_df %<-% Badges(apple_Badges_xml)
+apple_Comments_df %<-% Comments(apple_Comments_xml)
+apple_PostHistory_df %<-% PostHistory(apple_PostHistory_xml)
+apple_PostLinks_df %<-% PostLinks(apple_PostLinks_xml)
+apple_Posts_df %<-% Posts(apple_Posts_xml)
+apple_Tags_df %<-% Tags(apple_Tags_xml)
+apple_Users_df %<-% Users(apple_Users_xml)
+apple_Votes_df %<-% Votes(apple_Votes_xml)
+
+#Creating data frames
+apple_dfs <- lapply(ls(pattern = "apple"), get)
+
+#Continue rest in sequential
+plan(sequential)
+```
+
+```{r apple 1, echo = FALSE}
+app_df1 <- Order_By("apple_Posts_df", "ViewCount")[, c("ParentId", "Title", "CreationDate", "ViewCount")]
+app_mostViewed <- app_df1[1:3 & is.na(app_df1$ParentId),]
+app_df2 <- Order_By("apple_Posts_df", "Score")[, c("ParentId", "Title", "CreationDate", "Score")]
+app_mostScored <- app_df2[1:3 & is.na(app_df2$ParentId),]
+```
+#####  The most viewed question being `r text_spec(app_mostViewed[1, "Title"], color = "red")` is created on `r text_spec(app_mostViewed[1, "CreationDate"], color = "red")` has `r text_spec(app_mostViewed[1, "ViewCount"], color = "red")` views.
+##### Following the first question, most viewed second and third questions are `r text_spec(app_mostViewed[2, "Title"], color = "red")` is created on `r text_spec(app_mostViewed[2, "CreationDate"], color = "red")` has `r text_spec(app_mostViewed[2, "ViewCount"], color = "red")` views and `r text_spec(app_mostViewed[3, "Title"], color = "red")` is created on `r text_spec(app_mostViewed[3, "CreationDate"], color = "red")` has `r text_spec(app_mostViewed[3, "ViewCount"], color = "red")` views.
+
+##### Also, the highest scored question `r text_spec(app_mostScored[1, "Title"], color = "red")` with `r text_spec(app_mostScored[1, "Score"], color = "red")` points is created on `r text_spec(app_mostScored[1, "CreationDate"], color = "red")`.
+##### After the first question, second and third one are `r text_spec(app_mostScored[2, "Title"], color = "red")` with `r text_spec(app_mostScored[2, "Score"], color = "red")` points is created on `r text_spec(app_mostScored[2, "CreationDate"], color = "red")` and `r text_spec(app_mostScored[3, "Title"], color = "red")` with `r text_spec(app_mostScored[3, "Score"], color = "red")` points is created on `r text_spec(app_mostScored[3, "CreationDate"], color = "red")`.
+
+##### Next, the `r text_spec("Top 10 Users", color = "red")` on apple.stackexchange.com based on their reputations is shown on the below.
+```{r apple 2}
+Data_View(Order_By("apple_Users_df", "Reputation")[1:10, c("Id", "DisplayName", "Reputation")], 'Top 10 Users', "clc")
+```
+##### Also, on the figure below the `r text_spec("Top 10 Poland Users", color = "red")` is shown.
+```{r apple 3}
+Data_View(Top_Users("apple_Users_df", "Poland"), 'Top 10 Poland Users', "cclc")
+```
+##### Exploring more, the `r text_spec("Top 10 Answerers", color = "red")` on apple.stackexchange.com is shown on the below figure.
+```{r apple 4}
+Data_View(Top_Answerers(apple_Users_df, apple_Posts_df), 'Top Answerers', "llcc")
+```
+
+##### There are total of `r text_spec(nrow(apple_Tags_df), color = "red")` different Tags on apple.stackexchange.com and the most used tags on apple.stackexchange.com are shown as word cloud below. 
+```{r apple 5, message = FALSE, warning = FALSE}
+#Word Cloud
+wordcloud(words = Words(apple_Tags_df)$TagName, freq = Words(apple_Tags_df)$Count, min.freq = 1, max.words = 200, random.order = FALSE, rot.per = 0.35, colors = brewer.pal(8, "Dark2"))
+```
+
+## **gaming.stackexchange.com**
+### Path to gaming XML files
+```{r gaming XML File Paths, class.source = 'fold-show'}
+gaming_Badges_xml <- "gaming.stackexchange.com\\Badges.xml"
+gaming_Comments_xml <- "gaming.stackexchange.com\\Comments.xml"
+gaming_PostHistory_xml <- "gaming.stackexchange.com\\PostHistory.xml"
+gaming_PostLinks_xml <- "gaming.stackexchange.com\\PostLinks.xml"
+gaming_Posts_xml <- "gaming.stackexchange.com\\Posts.xml"
+gaming_Tags_xml <- "gaming.stackexchange.com\\Tags.xml"
+gaming_Users_xml <- "gaming.stackexchange.com\\Users.xml"
+gaming_Votes_xml <- "gaming.stackexchange.com\\Votes.xml"
+```
+
+### Data Frames
+```{r gaming Data Frames, class.source = 'fold-show', cache = TRUE}
+#Data frames will be created in parallel. Hence, creating multisession
+plan(multisession, gc = TRUE)
+
+#Promises
+gaming_Badges_df %<-% Badges(gaming_Badges_xml)
+gaming_Comments_df %<-% Comments(gaming_Comments_xml)
+gaming_PostHistory_df %<-% PostHistory(gaming_PostHistory_xml)
+gaming_PostLinks_df %<-% PostLinks(gaming_PostLinks_xml)
+gaming_Posts_df %<-% Posts(gaming_Posts_xml)
+gaming_Tags_df %<-% Tags(gaming_Tags_xml)
+gaming_Users_df %<-% Users(gaming_Users_xml)
+gaming_Votes_df %<-% Votes(gaming_Votes_xml)
+
+#Creating data frames
+gaming_dfs <- lapply(ls(pattern = "gaming"), get)
+
+#Continue rest in sequential
+plan(sequential)
+```
+
+```{r gaming 1, echo = FALSE}
+ing_df1 <- Order_By("gaming_Posts_df", "ViewCount")[, c("ParentId", "Title", "CreationDate", "ViewCount")]
+ing_mostViewed <- ing_df1[1:3 & is.na(ing_df1$ParentId),]
+ing_df2 <- Order_By("gaming_Posts_df", "Score")[, c("ParentId", "Title", "CreationDate", "Score")]
+ing_mostScored <- ing_df2[1:3 & is.na(ing_df2$ParentId),]
+```
+#####  The most viewed question being `r text_spec(ing_mostViewed[1, "Title"], color = "red")` is created on `r text_spec(ing_mostViewed[1, "CreationDate"], color = "red")` has `r text_spec(ing_mostViewed[1, "ViewCount"], color = "red")` views.
+##### Following the first question, most viewed second and third questions are `r text_spec(ing_mostViewed[2, "Title"], color = "red")` is created on `r text_spec(ing_mostViewed[2, "CreationDate"], color = "red")` has `r text_spec(ing_mostViewed[2, "ViewCount"], color = "red")` views and `r text_spec(ing_mostViewed[3, "Title"], color = "red")` is created on `r text_spec(ing_mostViewed[3, "CreationDate"], color = "red")` has `r text_spec(ing_mostViewed[3, "ViewCount"], color = "red")` views.
+
+##### Also, the highest scored question `r text_spec(ing_mostScored[1, "Title"], color = "red")` with `r text_spec(ing_mostScored[1, "Score"], color = "red")` points is created on `r text_spec(ing_mostScored[1, "CreationDate"], color = "red")`.
+##### After the first question, second and third one are `r text_spec(ing_mostScored[2, "Title"], color = "red")` with `r text_spec(ing_mostScored[2, "Score"], color = "red")` points is created on `r text_spec(ing_mostScored[2, "CreationDate"], color = "red")` and `r text_spec(ing_mostScored[3, "Title"], color = "red")` with `r text_spec(ing_mostScored[3, "Score"], color = "red")` points is created on `r text_spec(ing_mostScored[3, "CreationDate"], color = "red")`.
+
+##### Next, the `r text_spec("Top 10 Users", color = "red")` on gaming.stackexchange.com based on their reputations is shown on the below.
+```{r gaming 2}
+Data_View(Order_By("gaming_Users_df", "Reputation")[1:10, c("Id", "DisplayName", "Reputation")], 'Top 10 Users', "clc")
+```
+##### Also, on the figure below the `r text_spec("Top 10 Poland Users", color = "red")` is shown.
+```{r gaming 3}
+Data_View(Top_Users("gaming_Users_df", "Poland"), 'Top 10 Poland Users', "cclc")
+```
+##### Exploring more, the `r text_spec("Top 10 Answerers", color = "red")` on gaming.stackexchange.com is shown on the below figure.
+```{r gaming 4}
+Data_View(Top_Answerers(gaming_Users_df, gaming_Posts_df), 'Top Answerers', "llcc")
+```
+
+##### There are total of `r text_spec(nrow(gaming_Tags_df), color = "red")` different Tags on gaming.stackexchange.com and the most used tags on gaming.stackexchange.com are shown as word cloud below. 
+```{r gaming 5, message = FALSE, warning = FALSE}
+#Word Cloud
+wordcloud(words = Words(gaming_Tags_df)$TagName, freq = Words(gaming_Tags_df)$Count, min.freq = 1, max.words = 200, random.order = FALSE, rot.per = 0.35, colors = brewer.pal(8, "Dark2"))
+```
+
+## **gamedev.stackexchange.com**
+### Path to gamedev XML files
+```{r gamedev XML File Paths, class.source = 'fold-show'}
+gamedev_Badges_xml <- "gamedev.stackexchange.com\\Badges.xml"
+gamedev_Comments_xml <- "gamedev.stackexchange.com\\Comments.xml"
+gamedev_PostHistory_xml <- "gamedev.stackexchange.com\\PostHistory.xml"
+gamedev_PostLinks_xml <- "gamedev.stackexchange.com\\PostLinks.xml"
+gamedev_Posts_xml <- "gamedev.stackexchange.com\\Posts.xml"
+gamedev_Tags_xml <- "gamedev.stackexchange.com\\Tags.xml"
+gamedev_Users_xml <- "gamedev.stackexchange.com\\Users.xml"
+gamedev_Votes_xml <- "gamedev.stackexchange.com\\Votes.xml"
+```
+
+### Data Frames
+```{r gamedev Data Frames, class.source = 'fold-show', cache = TRUE}
+#Data frames will be created in parallel. Hence, creating multisession
+plan(multisession, gc = TRUE)
+
+#Promises
+gamedev_Badges_df %<-% Badges(gamedev_Badges_xml)
+gamedev_Comments_df %<-% Comments(gamedev_Comments_xml)
+gamedev_PostHistory_df %<-% PostHistory(gamedev_PostHistory_xml)
+gamedev_PostLinks_df %<-% PostLinks(gamedev_PostLinks_xml)
+gamedev_Posts_df %<-% Posts(gamedev_Posts_xml)
+gamedev_Tags_df %<-% Tags(gamedev_Tags_xml)
+gamedev_Users_df %<-% Users(gamedev_Users_xml)
+gamedev_Votes_df %<-% Votes(gamedev_Votes_xml)
+
+#Creating data frames
+gamedev_dfs <- lapply(ls(pattern = "gamedev"), get)
+
+#Continue rest in sequential
+plan(sequential)
+```
+
+```{r gamedev 1, echo = FALSE}
+dev_df1 <- Order_By("gamedev_Posts_df", "ViewCount")[, c("ParentId", "Title", "CreationDate", "ViewCount")]
+dev_mostViewed <- dev_df1[1:3 & is.na(dev_df1$ParentId),]
+dev_df2 <- Order_By("gamedev_Posts_df", "Score")[, c("ParentId", "Title", "CreationDate", "Score")]
+dev_mostScored <- dev_df2[1:3 & is.na(dev_df2$ParentId),]
+```
+#####  The most viewed question being `r text_spec(dev_mostViewed[1, "Title"], color = "red")` is created on `r text_spec(dev_mostViewed[1, "CreationDate"], color = "red")` has `r text_spec(dev_mostViewed[1, "ViewCount"], color = "red")` views.
+##### Following the first question, most viewed second and third questions are `r text_spec(dev_mostViewed[2, "Title"], color = "red")` is created on `r text_spec(dev_mostViewed[2, "CreationDate"], color = "red")` has `r text_spec(dev_mostViewed[2, "ViewCount"], color = "red")` views and `r text_spec(dev_mostViewed[3, "Title"], color = "red")` is created on `r text_spec(dev_mostViewed[3, "CreationDate"], color = "red")` has `r text_spec(dev_mostViewed[3, "ViewCount"], color = "red")` views.
+
+##### Also, the highest scored question `r text_spec(dev_mostScored[1, "Title"], color = "red")` with `r text_spec(dev_mostScored[1, "Score"], color = "red")` points is created on `r text_spec(dev_mostScored[1, "CreationDate"], color = "red")`.
+##### After the first question, second and third one are `r text_spec(dev_mostScored[2, "Title"], color = "red")` with `r text_spec(dev_mostScored[2, "Score"], color = "red")` points is created on `r text_spec(dev_mostScored[2, "CreationDate"], color = "red")` and `r text_spec(dev_mostScored[3, "Title"], color = "red")` with `r text_spec(dev_mostScored[3, "Score"], color = "red")` points is created on `r text_spec(dev_mostScored[3, "CreationDate"], color = "red")`.
+
+##### Next, the `r text_spec("Top 10 Users", color = "red")` on gamedev.stackexchange.com based on their reputations is shown on the below.
+```{r gamedev 2}
+Data_View(Order_By("gamedev_Users_df", "Reputation")[1:10, c("Id", "DisplayName", "Reputation")], 'Top 10 Users', "clc")
+```
+##### Also, on the figure below the `r text_spec("Top 10 Poland Users", color = "red")` is shown.
+```{r gamedev 3}
+Data_View(Top_Users("gamedev_Users_df", "Poland"), 'Top 10 Poland Users', "cclc")
+```
+##### Exploring more, the `r text_spec("Top 10 Answerers", color = "red")` on gamedev.stackexchange.com is shown on the below figure.
+```{r gamedev 4}
+Data_View(Top_Answerers(gamedev_Users_df, gamedev_Posts_df), 'Top Answerers', "llcc")
+```
+
+##### There are total of `r text_spec(nrow(gamedev_Tags_df), color = "red")` different Tags on gamedev.stackexchange.com and the most used tags on gamedev.stackexchange.com are shown as word cloud below. 
+```{r gamedev 5, message = FALSE, warning = FALSE}
+#Word Cloud
+wordcloud(words = Words(gamedev_Tags_df)$TagName, freq = Words(gamedev_Tags_df)$Count, min.freq = 1, max.words = 200, random.order = FALSE, rot.per = 0.35, colors = brewer.pal(8, "Dark2"))
+```
